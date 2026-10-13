@@ -4,6 +4,8 @@ import 'package:http/http.dart' as http;
 import 'register_page.dart';
 import 'customer/home_page.dart' as customer;
 import 'driver/homepage.dart' as driver;
+import 'driver/pending_approval_page.dart';
+import 'app_config.dart';
 
 /// SHARED login page - used by BOTH customers and drivers.
 /// After a successful login, we read `role` from the API response and
@@ -22,7 +24,7 @@ class _LoginPageState extends State<LoginPage> {
   bool obscurePassword = true;
 
   // TODO: change this to your actual server IP/domain when deploying.
-  final String apiUrl = 'http://192.168.0.88:8000/api/auth/login';
+  final String apiUrl = 'http://192.168.0.100:8000/api/auth/login';
 
   @override
   void dispose() {
@@ -64,6 +66,7 @@ class _LoginPageState extends State<LoginPage> {
         // (no wrapper), with fields: id, fullName, email, phone, role,
         // status, etc. role is uppercase: "CUSTOMER" or "DRIVER".
         final role = data['role'];
+        AppSession.setFromLogin(data);
 
         if (role == 'CUSTOMER') {
           Navigator.pushReplacement(
@@ -76,14 +79,23 @@ class _LoginPageState extends State<LoginPage> {
           );
         } else if (role == 'DRIVER') {
           // Newly registered drivers start as PENDING_APPROVAL but are
-          // still allowed to log in (backend doesn't block that status).
+          // still allowed to log in (backend doesn't block that status) -
+          // send them to a waiting screen instead of the real driver home.
           if (data['status'] == 'PENDING_APPROVAL') {
-            showMessage('Your driver account is still pending admin approval.');
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => PendingApprovalPage(
+                  driverName: data['fullName'] ?? email.split('@')[0],
+                ),
+              ),
+            );
+          } else {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const driver.Homepage()),
+            );
           }
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const driver.Homepage()),
-          );
         } else {
           // ADMIN/SUPER_ADMIN are blocked by the API with a 403 already,
           // so we should rarely land here - but handle it just in case.
