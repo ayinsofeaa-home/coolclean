@@ -1,18 +1,22 @@
 <?php
+
 namespace App\Models;
+
 use Illuminate\Database\Eloquent\Model;
+
 class QueuedEmail extends Model
 {
-    protected $table = 'email_queue';
-    protected $primaryKey = 'id';
+    protected $table = 'EMAIL_QUEUE';
+    protected $primaryKey = 'ID';
     public $timestamps = false;
     protected $guarded = [];
+
     protected function casts(): array
     {
         return [
-            'created_at' => 'datetime',
-            'last_attempt_at' => 'datetime',
-            'sent_at' => 'datetime',
+            'CREATED_AT' => 'datetime',
+            'LAST_ATTEMPT_AT' => 'datetime',
+            'SENT_AT' => 'datetime',
         ];
     }
 }

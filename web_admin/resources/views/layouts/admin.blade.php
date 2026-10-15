@@ -1,75 +1,98 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>@yield('title', 'CoolClean Admin') | CoolClean Admin</title>
-    {{-- Shared visual system ported from the existing Java application. --}}
-    <link rel="stylesheet" href="{{ asset('css/coolclean.css') }}">
-    <style>
-        /* Laravel compatibility helpers used by the converted Blade tables. */
-        .main > h2 { margin: 0 0 20px; }
-        .cards { display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:18px;margin-bottom:24px }
-        .table-wrap { width:100%;overflow-x:auto;border-radius:18px;background:#fff;box-shadow:var(--shadow) }
-        .table-wrap table { width:100%;border-collapse:collapse }
-        .table-wrap th,.table-wrap td { padding:14px 16px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top }
-        .table-wrap th { color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.05em }
-        .table-wrap form { display:flex;gap:8px;align-items:center;margin:3px 0 }
-        .panel { margin-bottom:20px;padding:22px;border-radius:18px;background:#fff;box-shadow:var(--shadow) }
-        .panel input,.panel select,.table-wrap input,.table-wrap select { max-width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font:inherit }
-        .panel button,.table-wrap button { padding:10px 14px;border:0;border-radius:10px;color:#fff;background:var(--blue);font-weight:700;cursor:pointer }
-        .pagination { margin-top:18px }
-        .alert { margin-bottom:18px;padding:14px 16px;border-radius:12px;background:#e8f8ef;color:#17603a }
-        .alert.error { background:#fff0f0;color:#9b1c1c }
-        @media(max-width:640px){.cards{grid-template-columns:1fr}.table-wrap table{min-width:720px}.table-wrap form{display:grid;min-width:210px}.panel input,.panel select,.panel button{width:100%}}
-    </style>
+    <meta charset="UTF-8">
+    <title>@yield('title', 'CoolClean')</title>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body>
-<div class="app-shell">
-    {{-- The sidebar is shared by every admin page, similar to a Java Thymeleaf fragment. --}}
-    <aside class="sidebar">
-        <div class="sidebar-head">
-            <a class="brand" href="{{ route('admin.dashboard') }}">
-                <img src="{{ asset('images/coolclean-logo-transparent.png') }}" alt="CoolClean logo">
-                <span class="brand-word">CoolClean</span>
-            </a>
+<body class="bg-slate-50 min-h-screen flex">
 
-            {{-- Three lines form the mobile hamburger. JavaScript toggles aria-expanded. --}}
-            <button class="menu-toggle navbar-toggler" type="button" aria-label="Open menu" aria-expanded="false" data-menu-toggle>
-                <span></span><span></span><span></span>
-            </button>
+    <aside class="w-64 shrink-0 text-white flex flex-col" style="background-color: #4A5A7A;">
+
+        {{-- Logo area --}}
+        <div class="p-6 flex items-center gap-3" style="background-color: #3C4A63;">
+            <div class="bg-white rounded-xl p-1.5 shadow-md">
+                <img src="{{ asset('images/logo.png') }}" alt="CoolClean" class="w-9 h-9 object-contain">
+            </div>
+            <span class="text-xl font-bold tracking-tight">CoolClean</span>
         </div>
 
-        <nav class="nav" data-admin-nav>
-            <select class="language-select" aria-label="Language"><option value="en">English</option><option value="ms">Malay</option></select>
+        {{-- Language switcher --}}
+        <div class="p-4 flex gap-2" style="background-color: #3C4A63;">
+            <form method="POST" action="{{ route('language.switch', 'english') }}">
+                @csrf
+                <button class="text-xs font-semibold px-2.5 py-1 rounded-md transition {{ app()->getLocale() === 'english' ? 'bg-white text-[#3C4A63]' : 'bg-white/15 text-white hover:bg-white/25' }}">EN</button>
+            </form>
+            <form method="POST" action="{{ route('language.switch', 'malay') }}">
+                @csrf
+                <button class="text-xs font-semibold px-2.5 py-1 rounded-md transition {{ app()->getLocale() === 'malay' ? 'bg-white text-[#3C4A63]' : 'bg-white/15 text-white hover:bg-white/25' }}">MY</button>
+            </form>
+            <form method="POST" action="{{ route('language.switch', 'chinese') }}">
+                @csrf
+                <button class="text-xs font-semibold px-2.5 py-1 rounded-md transition {{ app()->getLocale() === 'chinese' ? 'bg-white text-[#3C4A63]' : 'bg-white/15 text-white hover:bg-white/25' }}">中文</button>
+            </form>
+        </div>
 
-            {{-- routeIs adds the active class according to the current Laravel route. --}}
-            <a class="{{ request()->routeIs('admin.dashboard','dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}">Dashboard</a>
-            <a class="{{ request()->routeIs('admin.bookings*') ? 'active' : '' }}" href="{{ route('admin.bookings') }}">Bookings</a>
-            <a class="{{ request()->routeIs('admin.customers') ? 'active' : '' }}" href="{{ route('admin.customers') }}">Customers</a>
-            <a class="{{ request()->routeIs('admin.drivers*') ? 'active' : '' }}" href="{{ route('admin.drivers') }}">Drivers</a>
-            <a class="{{ request()->routeIs('admin.operations*') ? 'active' : '' }}" href="{{ route('admin.operations') }}">Live Operations</a>
-            <a class="{{ request()->routeIs('admin.services*') ? 'active' : '' }}" href="{{ route('admin.services') }}">Services</a>
-            <a class="{{ request()->routeIs('admin.locations') ? 'active' : '' }}" href="{{ route('admin.locations') }}">Laundry Locations</a>
-            <a class="{{ request()->routeIs('admin.payments') ? 'active' : '' }}" href="{{ route('admin.payments') }}">Payments</a>
-            <a class="{{ request()->routeIs('admin.payouts*') ? 'active' : '' }}" href="{{ route('admin.payouts') }}">Driver Payouts</a>
-            <a class="{{ request()->routeIs('admin.reports') ? 'active' : '' }}" href="{{ route('admin.reports') }}">Reports</a>
-            <a class="{{ request()->routeIs('admin.admins*') ? 'active' : '' }}" href="{{ route('admin.admins') }}">Admin Users</a>
-            <a class="{{ request()->routeIs('admin.password.*') ? 'active' : '' }}" href="{{ route('admin.password.form') }}">Change Password</a>
+        {{-- Nav --}}
+        <nav class="flex-1 px-3 py-4 space-y-0.5 text-sm overflow-y-auto">
+            <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {{ request()->routeIs('admin.dashboard') ? 'font-semibold shadow-sm' : 'text-white/75 hover:text-white' }}" @if(request()->routeIs('admin.dashboard')) style="background-color: #2F3B52;" @else onmouseover="this.style.backgroundColor='#3C4A63'" onmouseout="this.style.backgroundColor='transparent'" @endif>
+                <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('admin.dashboard') ? 'bg-white' : 'bg-white/40' }}"></span>
+                {{ __('nav.dashboard') }}
+            </a>
+            <a href="{{ route('admin.bookings') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {{ request()->routeIs('admin.bookings') ? 'font-semibold shadow-sm' : 'text-white/75 hover:text-white' }}" @if(request()->routeIs('admin.bookings')) style="background-color: #2F3B52;" @else onmouseover="this.style.backgroundColor='#3C4A63'" onmouseout="this.style.backgroundColor='transparent'" @endif>
+                <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('admin.bookings') ? 'bg-white' : 'bg-white/40' }}"></span>
+                {{ __('nav.bookings') }}
+            </a>
+            <a href="{{ route('admin.customers') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {{ request()->routeIs('admin.customers') ? 'font-semibold shadow-sm' : 'text-white/75 hover:text-white' }}" @if(request()->routeIs('admin.customers')) style="background-color: #2F3B52;" @else onmouseover="this.style.backgroundColor='#3C4A63'" onmouseout="this.style.backgroundColor='transparent'" @endif>
+                <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('admin.customers') ? 'bg-white' : 'bg-white/40' }}"></span>
+                {{ __('nav.customers') }}
+            </a>
+            <a href="{{ route('admin.drivers') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {{ request()->routeIs('admin.drivers') ? 'font-semibold shadow-sm' : 'text-white/75 hover:text-white' }}" @if(request()->routeIs('admin.drivers')) style="background-color: #2F3B52;" @else onmouseover="this.style.backgroundColor='#3C4A63'" onmouseout="this.style.backgroundColor='transparent'" @endif>
+                <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('admin.drivers') ? 'bg-white' : 'bg-white/40' }}"></span>
+                {{ __('nav.drivers') }}
+            </a>
+            <a href="{{ route('admin.live-operations') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {{ request()->routeIs('admin.live-operations') ? 'font-semibold shadow-sm' : 'text-white/75 hover:text-white' }}" @if(request()->routeIs('admin.live-operations')) style="background-color: #2F3B52;" @else onmouseover="this.style.backgroundColor='#3C4A63'" onmouseout="this.style.backgroundColor='transparent'" @endif>
+                <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('admin.live-operations') ? 'bg-white' : 'bg-white/40' }}"></span>
+                {{ __('nav.live_operations') }}
+            </a>
+            <a href="{{ route('admin.services') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {{ request()->routeIs('admin.services') ? 'font-semibold shadow-sm' : 'text-white/75 hover:text-white' }}" @if(request()->routeIs('admin.services')) style="background-color: #2F3B52;" @else onmouseover="this.style.backgroundColor='#3C4A63'" onmouseout="this.style.backgroundColor='transparent'" @endif>
+                <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('admin.services') ? 'bg-white' : 'bg-white/40' }}"></span>
+                {{ __('nav.services') }}
+            </a>
+            <a href="{{ route('admin.laundry-locations') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {{ request()->routeIs('admin.laundry-locations') ? 'font-semibold shadow-sm' : 'text-white/75 hover:text-white' }}" @if(request()->routeIs('admin.laundry-locations')) style="background-color: #2F3B52;" @else onmouseover="this.style.backgroundColor='#3C4A63'" onmouseout="this.style.backgroundColor='transparent'" @endif>
+                <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('admin.laundry-locations') ? 'bg-white' : 'bg-white/40' }}"></span>
+                {{ __('nav.laundry_locations') }}
+            </a>
+            <a href="{{ route('admin.payments') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {{ request()->routeIs('admin.payments') ? 'font-semibold shadow-sm' : 'text-white/75 hover:text-white' }}" @if(request()->routeIs('admin.payments')) style="background-color: #2F3B52;" @else onmouseover="this.style.backgroundColor='#3C4A63'" onmouseout="this.style.backgroundColor='transparent'" @endif>
+                <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('admin.payments') ? 'bg-white' : 'bg-white/40' }}"></span>
+                {{ __('nav.payments') }}
+            </a>
+            <a href="{{ route('admin.driver-payouts') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {{ request()->routeIs('admin.driver-payouts') ? 'font-semibold shadow-sm' : 'text-white/75 hover:text-white' }}" @if(request()->routeIs('admin.driver-payouts')) style="background-color: #2F3B52;" @else onmouseover="this.style.backgroundColor='#3C4A63'" onmouseout="this.style.backgroundColor='transparent'" @endif>
+                <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('admin.driver-payouts') ? 'bg-white' : 'bg-white/40' }}"></span>
+                {{ __('nav.driver_payouts') }}
+            </a>
+            <a href="{{ route('admin.admin-users') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {{ request()->routeIs('admin.admin-users') ? 'font-semibold shadow-sm' : 'text-white/75 hover:text-white' }}" @if(request()->routeIs('admin.admin-users')) style="background-color: #2F3B52;" @else onmouseover="this.style.backgroundColor='#3C4A63'" onmouseout="this.style.backgroundColor='transparent'" @endif>
+                <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('admin.admin-users') ? 'bg-white' : 'bg-white/40' }}"></span>
+                {{ __('nav.admin_users') }}
+            </a>
+            <a href="{{ route('admin.change-password') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {{ request()->routeIs('admin.change-password') ? 'font-semibold shadow-sm' : 'text-white/75 hover:text-white' }}" @if(request()->routeIs('admin.change-password')) style="background-color: #2F3B52;" @else onmouseover="this.style.backgroundColor='#3C4A63'" onmouseout="this.style.backgroundColor='transparent'" @endif>
+                <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('admin.change-password') ? 'bg-white' : 'bg-white/40' }}"></span>
+                {{ __('nav.change_password') }}
+            </a>
 
-            {{-- Logout changes session state, therefore Laravel requires POST and CSRF. --}}
-            <form class="logout-form" method="POST" action="{{ route('logout') }}">@csrf<button class="logout-button" type="submit">Logout</button></form>
+            <form method="POST" action="{{ route('logout') }}" class="pt-1">
+                @csrf
+                <button type="submit" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-red-200 hover:bg-red-500/20 transition text-left">
+                    <span class="w-1.5 h-1.5 rounded-full bg-red-300"></span>
+                    {{ __('nav.logout') }}
+                </button>
+            </form>
         </nav>
     </aside>
 
-    <main class="main">
-        <section class="topbar"><div><h1>@yield('heading')</h1><p>@yield('subheading', 'Manage CoolClean operations from one secure workspace.')</p></div></section>
-        @if(session('success'))<div class="alert">{{ session('success') }}</div>@endif
-        @if($errors->any())<div class="alert error"><b>Please correct the following:</b><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
+    <main class="flex-1 min-w-0 p-8">
         @yield('content')
     </main>
-</div>
-<script src="{{ asset('js/i18n.js') }}"></script>
-<script src="{{ asset('js/admin-menu.js') }}"></script>
+
 </body>
 </html>

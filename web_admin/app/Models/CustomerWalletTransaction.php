@@ -1,26 +1,32 @@
 <?php
+
 namespace App\Models;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
 class CustomerWalletTransaction extends Model
 {
-    protected $table = 'customer_wallet_transactions';
-    protected $primaryKey = 'id';
+    protected $table = 'CUSTOMER_WALLET_TRANSACTIONS';
+    protected $primaryKey = 'ID';
     public $timestamps = false;
     protected $guarded = [];
+
     protected function casts(): array
     {
         return [
-            'amount' => 'decimal:2',
-            'created_at' => 'datetime',
+            'AMOUNT' => 'decimal:2',
+            'CREATED_AT' => 'datetime',
         ];
     }
+
     public function customer(): BelongsTo
     {
-        return $this->belongsTo(Customer::class, 'customer_id', 'id');
+        return $this->belongsTo(Customer::class, 'CUSTOMER_ID', 'ID');
     }
+
     public function booking(): BelongsTo
     {
-        return $this->belongsTo(Booking::class, 'booking_id', 'id');
+        return $this->belongsTo(Booking::class, 'BOOKING_ID', 'ID');
     }
 }
