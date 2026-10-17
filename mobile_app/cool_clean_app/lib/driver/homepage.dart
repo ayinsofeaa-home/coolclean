@@ -1,6 +1,8 @@
 import 'dart:convert';
 import '../login_page.dart';
 import '../app_config.dart';
+import 'accepted_job_page.dart';
+import 'update_job_status.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'job_page.dart';
@@ -18,6 +20,7 @@ class _HomepageState extends State<Homepage> {
   // Starts from whatever the server said at login (new drivers are OFFLINE).
   bool isOnline = AppSession.driverAvailability == 'ONLINE';
   bool isUpdatingAvailability = false;
+  final Set<int> _busyJobIds = {}; // jobs with an accept/reject request running
 
   // Real job data from the server (empty until the driver has orders).
   List<dynamic> availableJobs = [];
@@ -133,14 +136,147 @@ class _HomepageState extends State<Homepage> {
     return parts.isEmpty ? 'No address provided' : parts.join(', ');
   }
 
-  /// Simple read-only list of paid requests waiting for a driver.
+  /// UPDATE button: opens the sheet that moves the shown job to its next step.
+  Future<void> _openUpdateSheet() async {
+    final job = _currentJob;
+    if (job == null) return;
+
+    final updated = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => UpdateJobStatusSheet(job: job),
+    );
+
+    if (updated != null && mounted) {
+      _showMessage('Status updated: ${_statusLabel(updated['status'])}');
+      _loadJobs(); // refresh the card
+    }
+  }
+
+  /// Reads the server's error message out of a response, with a safe fallback
+  /// (a crashed server returns an HTML page, not JSON).
+  String _messageFrom(http.Response response, String fallback) {
+    try {
+      final data = jsonDecode(response.body);
+      if (data is Map && data['message'] != null) return data['message'].toString();
+    } catch (_) {}
+    return '$fallback (server error ${response.statusCode}).';
+  }
+
+  /// Driver taps Accept: assign the job to this driver, then open the
+  /// job details page.
+  Future<void> _acceptJob(Map<String, dynamic> job) async {
+    final userId = AppSession.userId;
+    if (userId == null) {
+      _showMessage('Please log in again.');
+      return;
+    }
+    final jobId = (job['id'] as num).toInt();
+
+    setState(() => _busyJobIds.add(jobId));
+    Map<String, dynamic>? acceptedJob;
+
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/mobile/drivers/$userId/jobs/$jobId/accept'),
+        headers: _headers,
+      );
+      debugPrint('ACCEPT: ${response.statusCode} ${response.body}');
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        acceptedJob = Map<String, dynamic>.from(jsonDecode(response.body));
+      } else {
+        _showMessage(_messageFrom(response, 'Could not accept this job'));
+        _loadJobs(); // e.g. another driver already took it
+      }
+    } catch (e) {
+      debugPrint('ACCEPT ERROR: $e');
+      if (mounted) _showMessage('Unable to connect to the server.');
+    } finally {
+      if (mounted) setState(() => _busyJobIds.remove(jobId));
+    }
+
+    if (acceptedJob != null && mounted) {
+      final accepted = acceptedJob;
+      setState(() => availableJobs.removeWhere((j) => j['id'] == job['id']));
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => AcceptedJobPage(job: accepted)),
+      );
+      if (mounted) _loadJobs(); // refresh the counts when coming back
+    }
+  }
+
+  /// Driver taps Reject: hide this request for THIS driver only.
+  Future<void> _rejectJob(Map<String, dynamic> job) async {
+    final userId = AppSession.userId;
+    if (userId == null) {
+      _showMessage('Please log in again.');
+      return;
+    }
+    final jobId = (job['id'] as num).toInt();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reject this request?'),
+        content: const Text(
+          'It will be removed from your list. Other drivers can still accept it.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('Reject', style: TextStyle(color: Colors.red[700])),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _busyJobIds.add(jobId));
+
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/mobile/drivers/$userId/jobs/$jobId/reject'),
+        headers: _headers,
+      );
+      debugPrint('REJECT: ${response.statusCode} ${response.body}');
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        setState(() => availableJobs.removeWhere((j) => j['id'] == job['id']));
+      } else {
+        _showMessage(_messageFrom(response, 'Could not reject this request'));
+      }
+    } catch (e) {
+      debugPrint('REJECT ERROR: $e');
+      if (mounted) _showMessage('Unable to connect to the server.');
+    } finally {
+      if (mounted) setState(() => _busyJobIds.remove(jobId));
+    }
+  }
+
+  /// List of paid requests waiting for a driver, each with Accept / Reject.
   Widget _buildAvailableJobs() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: availableJobs.map<Widget>((job) {
+      children: availableJobs.map<Widget>((rawJob) {
+        final job = rawJob as Map<String, dynamic>;
+        final jobId = (job['id'] as num).toInt();
+        final busy = _busyJobIds.contains(jobId);
+        final isLast = identical(rawJob, availableJobs.last);
         final total = (job['totalAmount'] as num?) ?? 0;
+
         return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
+          padding: EdgeInsets.only(bottom: isLast ? 0 : 4),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -152,6 +288,23 @@ class _HomepageState extends State<Homepage> {
                   color: Colors.lightBlue[900],
                 ),
               ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(Icons.person_outline, size: 14, color: Colors.grey[600]),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      (job['customerName'] ?? '-').toString(),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey[800],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 2),
               Text(
                 _jobAddress(job),
@@ -160,12 +313,54 @@ class _HomepageState extends State<Homepage> {
               const SizedBox(height: 2),
               Text(
                 'RM ${total.toStringAsFixed(2)}',
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: Colors.teal,
                 ),
               ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: busy ? null : () => _rejectJob(job),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red[700],
+                        side: BorderSide(color: Colors.red.shade200),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: const Text('Reject'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: busy ? null : () => _acceptJob(job),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.teal,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: busy
+                          ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                          : const Text('Accept'),
+                    ),
+                  ),
+                ],
+              ),
+              if (!isLast) const Divider(height: 28),
             ],
           ),
         );
@@ -508,6 +703,27 @@ class _HomepageState extends State<Homepage> {
                       style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                     ),
                     const SizedBox(height: 16),
+                    //BUTTON UPDATE STATUS
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _openUpdateSheet,
+                        icon: const Icon(Icons.sync, size: 20),
+                        label: const Text(
+                          'UPDATE',
+                          style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.teal,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
                     //BUTTON OPEN MAP
                     SizedBox(
                       width: double.infinity,
