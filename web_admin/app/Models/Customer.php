@@ -1,24 +1,29 @@
 <?php
+
 namespace App\Models;
+
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+
 class Customer extends Model
 {
-    protected $table = 'customers';
-    protected $primaryKey = 'id';
-    public $timestamps = false;
+    protected $table = 'CUSTOMERS';
+
     protected $guarded = [];
-    public function user(): BelongsTo
+    protected $primaryKey = 'ID';
+    public $timestamps = false;
+
+    public function user()
     {
-        return $this->belongsTo(User::class, 'user_id', 'id');
+        return $this->belongsTo(User::class, 'USER_ID', 'ID');
     }
-    public function bookings(): HasMany
+
+    public function bookings()
     {
-        return $this->hasMany(Booking::class, 'customer_id', 'id');
+        return $this->hasMany(Booking::class, 'CUSTOMER_ID', 'ID');
     }
-    public function walletTransactions(): HasMany
+
+    public function walletTransactions()
     {
-        return $this->hasMany(CustomerWalletTransaction::class, 'customer_id', 'id');
+        return $this->hasMany(CustomerWalletTransaction::class, 'CUSTOMER_ID', 'ID');
     }
 }

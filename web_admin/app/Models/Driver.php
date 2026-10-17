@@ -1,26 +1,24 @@
 <?php
+
 namespace App\Models;
+
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+
 class Driver extends Model
 {
-    protected $table = 'drivers';
-    protected $primaryKey = 'id';
+    protected $table = 'DRIVERS';
+
+    protected $guarded = []; //tambah yang ni
+    protected $primaryKey = 'ID';
     public $timestamps = false;
-    protected $guarded = [];
-    protected function casts(): array
+
+    public function user()
     {
-        return [
-            'approved_at' => 'datetime',
-        ];
+        return $this->belongsTo(User::class, 'USER_ID', 'ID');
     }
-    public function user(): BelongsTo
+
+    public function bookings()
     {
-        return $this->belongsTo(User::class, 'user_id', 'id');
-    }
-    public function bookings(): HasMany
-    {
-        return $this->hasMany(Booking::class, 'driver_id', 'id');
+        return $this->hasMany(Booking::class, 'DRIVER_ID', 'ID');
     }
 }

@@ -1,52 +1,62 @@
 <?php
+
 namespace App\Models;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+
 class Booking extends Model
 {
-    protected $table = 'bookings';
-    protected $primaryKey = 'id';
+    protected $table = 'BOOKINGS';
+    protected $primaryKey = 'ID';
     public $timestamps = false;
     protected $guarded = [];
+
     protected function casts(): array
     {
         return [
-            'total_amount' => 'decimal:2',
-            'laundry_fee' => 'decimal:2',
-            'service_fee' => 'decimal:2',
-            'delivery_fee' => 'decimal:2',
-            'created_at' => 'datetime',
-            'pickup_date_time' => 'datetime',
-            'completed_at' => 'datetime',
-            'rated_at' => 'datetime',
-            'pickup_proof_at' => 'datetime',
-            'delivery_proof_at' => 'datetime',
+            'TOTAL_AMOUNT' => 'decimal:2',
+            'LAUNDRY_FEE' => 'decimal:2',
+            'SERVICE_FEE' => 'decimal:2',
+            'DELIVERY_FEE' => 'decimal:2',
+            'CREATED_AT' => 'datetime',
+            'PICKUP_DATE_TIME' => 'datetime',
+            'COMPLETED_AT' => 'datetime',
+            'RATED_AT' => 'datetime',
+            'PICKUP_PROOF_AT' => 'datetime',
+            'DELIVERY_PROOF_AT' => 'datetime',
         ];
     }
+
     public function customer(): BelongsTo
     {
-        return $this->belongsTo(Customer::class, 'customer_id', 'id');
+        return $this->belongsTo(Customer::class, 'CUSTOMER_ID', 'ID');
     }
+
     public function driver(): BelongsTo
     {
-        return $this->belongsTo(Driver::class, 'driver_id', 'id');
+        return $this->belongsTo(Driver::class, 'DRIVER_ID', 'ID');
     }
+
     public function laundryLocation(): BelongsTo
     {
-        return $this->belongsTo(LaundryLocation::class, 'laundry_location_id', 'id');
+        return $this->belongsTo(LaundryLocation::class, 'LAUNDRY_LOCATION_ID', 'ID');
     }
+
     public function payment(): HasOne
     {
-        return $this->hasOne(Payment::class, 'booking_id', 'id');
+        return $this->hasOne(Payment::class, 'BOOKING_ID', 'ID');
     }
+
     public function earning(): HasOne
     {
-        return $this->hasOne(BookingEarning::class, 'booking_id', 'id');
+        return $this->hasOne(BookingEarning::class, 'BOOKING_ID', 'ID');
     }
+
     public function statusHistory(): HasMany
     {
-        return $this->hasMany(BookingStatusHistory::class, 'booking_id', 'id');
+        return $this->hasMany(BookingStatusHistory::class, 'BOOKING_ID', 'ID');
     }
 }

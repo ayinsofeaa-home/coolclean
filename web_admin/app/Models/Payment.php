@@ -1,22 +1,19 @@
 <?php
+
 namespace App\Models;
+
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
 class Payment extends Model
 {
-    protected $table = 'payments';
-    protected $primaryKey = 'id';
+    protected $table = 'PAYMENTS';
+
+    protected $guarded = []; //tambah yang ni
+    protected $primaryKey = 'ID';
     public $timestamps = false;
-    protected $guarded = [];
-    protected function casts(): array
+
+    public function booking()
     {
-        return [
-            'amount' => 'decimal:2',
-            'paid_at' => 'datetime',
-        ];
-    }
-    public function booking(): BelongsTo
-    {
-        return $this->belongsTo(Booking::class, 'booking_id', 'id');
+        return $this->belongsTo(Booking::class, 'BOOKING_ID', 'ID');
     }
 }

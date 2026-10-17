@@ -29,6 +29,7 @@ Route::prefix('mobile')->controller(MobileAppController::class)->group(function 
     Route::get('/drivers/{user}/earnings', 'driverEarnings');
     Route::post('/drivers/{user}/availability', 'updateAvailability');
     Route::post('/drivers/{user}/jobs/{booking}/accept', 'acceptJob');
+    Route::post('/drivers/{user}/jobs/{booking}/reject', 'rejectJob');
     Route::post('/drivers/{user}/jobs/{booking}/status', 'updateJobStatus');
     Route::post('/drivers/{user}/jobs/{booking}/cancel', 'cancelDriverJob');
     Route::get('/drivers/{user}/jobs/{booking}/history', 'driverHistory');
