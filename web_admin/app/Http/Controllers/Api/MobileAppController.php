@@ -127,7 +127,9 @@ class MobileAppController extends Controller
     public function availableJobs(User $user): JsonResponse
     {
         $driver = $this->driver($user);
-        $jobs = Booking::with(['customer.user', 'driver.user'])->where('BOOKING_STATUS', 'PAID_WAITING_DRIVER')->whereNull('DRIVER_ID')->oldest('CREATED_AT')->get()
+        // Requests this driver rejected stay hidden for THIS driver only.
+        $rejectedIds = DB::table('driver_rejected_bookings')->where('DRIVER_ID', $driver->ID)->pluck('BOOKING_ID');
+        $jobs = Booking::with(['customer.user', 'driver.user'])->where('BOOKING_STATUS', 'PAID_WAITING_DRIVER')->whereNull('DRIVER_ID')->whereNotIn('ID', $rejectedIds)->oldest('CREATED_AT')->get()
             ->map(fn ($booking) => $this->bookingResponse($booking, 0, $this->distance($driver, $booking)))->filter(fn ($booking) => $booking['distanceKm'] === null || $booking['distanceKm'] <= 30)->values();
         return response()->json($jobs);
     }
@@ -166,6 +168,21 @@ class MobileAppController extends Controller
         $this->history($booking, 'ACCEPTED_BY_DRIVER', 'Driver accepted the job.', $user);
         $this->push->sendToUser($booking->customer?->user, 'CoolClean booking accepted', $user->FULL_NAME.' accepted '.$booking->BOOKING_NO.'.');
         return response()->json($this->bookingResponse($booking->fresh(['customer.user', 'driver.user'])));
+    }
+
+    public function rejectJob(User $user, Booking $booking): JsonResponse
+    {
+        $driver = $this->driver($user);
+        if ($booking->DRIVER_ID && (int) $booking->DRIVER_ID === (int) $driver->ID) {
+            $this->fail('You already accepted this job. Cancel it instead.');
+        }
+        // Only hides the request for this driver. Other drivers still see it.
+        DB::table('driver_rejected_bookings')->insertOrIgnore([
+            'DRIVER_ID' => $driver->ID,
+            'BOOKING_ID' => $booking->ID,
+            'CREATED_AT' => now(),
+        ]);
+        return response()->json(['message' => 'Request removed from your list.']);
     }
 
     public function updateJobStatus(Request $request, User $user, Booking $booking): JsonResponse

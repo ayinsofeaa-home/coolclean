@@ -18,12 +18,23 @@ class AppSession {
   /// 'ONLINE' or 'OFFLINE' (drivers only).
   static String? driverAvailability;
 
+  /// The address saved at registration. Used to prefill the pickup address
+  /// when a customer creates a booking.
+  static String? defaultAddress;
+  static String? defaultPostcode;
+  static String? defaultCity;
+  static String? defaultState;
+
   /// Call this with the JSON returned by POST /api/auth/login.
   static void setFromLogin(Map<String, dynamic> data) {
     userId = (data['id'] as num?)?.toInt();
     fullName = data['fullName']?.toString();
     role = data['role']?.toString();
     driverAvailability = data['driverAvailability']?.toString();
+    defaultAddress = data['defaultAddress']?.toString();
+    defaultPostcode = data['defaultPostcode']?.toString();
+    defaultCity = data['defaultCity']?.toString();
+    defaultState = data['defaultState']?.toString();
   }
 
   static void clear() {
@@ -31,5 +42,9 @@ class AppSession {
     fullName = null;
     role = null;
     driverAvailability = null;
+    defaultAddress = null;
+    defaultPostcode = null;
+    defaultCity = null;
+    defaultState = null;
   }
 }

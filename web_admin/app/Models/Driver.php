@@ -16,4 +16,9 @@ class Driver extends Model
     {
         return $this->belongsTo(User::class, 'USER_ID', 'ID');
     }
+
+    public function bookings()
+    {
+        return $this->hasMany(Booking::class, 'DRIVER_ID', 'ID');
+    }
 }
